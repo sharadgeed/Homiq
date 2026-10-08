@@ -2,19 +2,37 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const DB_PATH = process.env.DATABASE_PATH || path.join(process.cwd(), 'data', 'homiq.db');
+function resolveDbPath(): string {
+  if (process.env.DATABASE_PATH) return process.env.DATABASE_PATH;
 
-// Ensure parent directory exists
-const dbDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+  // If running inside Vercel serverless environment
+  if (process.env.VERCEL) {
+    const tmpPath = path.join('/tmp', 'homiq.db');
+    const bundledPath = path.join(process.cwd(), 'data', 'homiq.db');
+    if (!fs.existsSync(tmpPath) && fs.existsSync(bundledPath)) {
+      try {
+        fs.copyFileSync(bundledPath, tmpPath);
+      } catch (err) {
+        console.error('Failed to copy bundled database to /tmp:', err);
+      }
+    }
+    return tmpPath;
+  }
+
+  return path.join(process.cwd(), 'data', 'homiq.db');
 }
 
 let dbInstance: Database.Database | null = null;
 
 export function getDb(): Database.Database {
   if (!dbInstance) {
-    dbInstance = new Database(DB_PATH);
+    const dbPath = resolveDbPath();
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+
+    dbInstance = new Database(dbPath);
     dbInstance.pragma('journal_mode = WAL');
     dbInstance.pragma('foreign_keys = ON');
     initSchema(dbInstance);
