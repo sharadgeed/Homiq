@@ -78,12 +78,12 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <div className="card" style={{ padding: '2rem' }}>
+        <div className="card auth-card">
           <form onSubmit={handleRegister}>
             {/* Role Selection Tabs */}
             <div style={{ marginBottom: '1.5rem' }}>
               <label className="form-label" style={{ marginBottom: '0.5rem' }}>I am joining as a:</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+              <div className="role-select-grid">
                 {[
                   { id: 'renter', label: '1. Renter / Room Seeker' },
                   { id: 'owner', label: '2. Property Owner' },

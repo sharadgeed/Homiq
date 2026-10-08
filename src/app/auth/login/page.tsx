@@ -93,7 +93,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="card" style={{ padding: '2rem', marginBottom: '2rem' }}>
+        <div className="card auth-card">
           <form onSubmit={handleLogin}>
             <div className="form-group">
               <label className="form-label">Email Address</label>

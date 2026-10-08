@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Video, MessageSquare, AlertTriangle, ShieldCheck, Check, RefreshCw, X } from 'lucide-react';
 import { Listing } from '@/lib/types';
+import { formatINR } from '@/lib/api-response';
 
 interface ListingDetailActionsProps {
   listing: Listing;
@@ -177,6 +178,37 @@ export default function ListingDetailActions({ listing }: ListingDetailActionsPr
         <AlertTriangle size={13} color="#f59e0b" />
         <span>Report inaccurate details or scam</span>
       </button>
+
+      {/* Mobile Sticky Floating Bottom Booking Bar */}
+      <div className="mobile-sticky-action-bar">
+        <div>
+          <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1.1 }}>
+            {formatINR(listing.rentAmount)}
+            <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-muted)' }}>/mo</span>
+          </div>
+          <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+            Ready {listing.availableFrom}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => setShowEnquiryModal(true)}
+            className="btn btn-secondary btn-sm"
+            style={{ padding: '0.55rem 0.75rem' }}
+            title="Send enquiry"
+          >
+            <MessageSquare size={16} />
+          </button>
+          <button
+            onClick={() => setShowViewingModal(true)}
+            className="btn btn-primary btn-sm"
+            style={{ padding: '0.55rem 1rem', fontWeight: 700 }}
+          >
+            <Calendar size={16} />
+            <span>Book Visit</span>
+          </button>
+        </div>
+      </div>
 
       {/* ================================================================ */}
       {/* 1. SCHEDULE VIEWING MODAL */}

@@ -67,7 +67,11 @@ function CompareContent() {
             </Link>
           </div>
         ) : (
-          <div className="card" style={{ overflowX: 'auto', border: '1.5px solid var(--border-light)' }}>
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78125rem', color: '#64748b', marginBottom: '0.5rem' }}>
+              <span>👉 Swipe horizontally on mobile to view all comparison columns</span>
+            </div>
+            <div className="card" style={{ overflowX: 'auto', border: '1.5px solid var(--border-light)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: '780px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
@@ -244,6 +248,7 @@ function CompareContent() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </main>
 

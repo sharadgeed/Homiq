@@ -130,16 +130,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
         </div>
 
         {/* High-Resolution Photo Gallery */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
-          gap: '0.75rem',
-          borderRadius: '16px',
-          overflow: 'hidden',
-          marginBottom: '2rem',
-          maxHeight: '480px'
-        }}>
-          <div style={{ height: '480px', background: '#cbd5e1' }}>
+        <div className="listing-gallery-grid">
+          <div style={{ height: '100%', minHeight: '260px', background: '#cbd5e1' }}>
             <img
               src={listing.images[0] || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80'}
               alt={listing.title}
@@ -147,7 +139,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '0.75rem', height: '480px' }}>
+          <div className="gallery-secondary-col" style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '0.75rem', height: '480px' }}>
             <img
               src={listing.images[1] || 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80'}
               alt="Room interior"
@@ -162,11 +154,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
         </div>
 
         {/* Two Column Layout: Main Details vs Right Sticky Booking Card */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '2.5rem', alignItems: 'flex-start' }}>
+        <div className="listing-two-col-layout">
           {/* Left Column: Details */}
           <div>
             {/* Highlights Grid */}
-            <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', textAlign: 'center' }}>
+            <div className="card listing-highlights-grid" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
               <div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Configuration</div>
                 <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.2rem' }}>

@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect, useTransition, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, Filter, SlidersHorizontal, MapPin, Map, List, Scale, CheckCircle2, X, RefreshCw } from 'lucide-react';
+import {
+  Search, Filter, SlidersHorizontal, MapPin, Map, List, Scale,
+  CheckCircle2, X, RefreshCw, Sparkles, Building2, Bed, ArrowUpDown
+} from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DemoRoleBar from '@/components/DemoRoleBar';
@@ -34,6 +37,9 @@ function SearchContent() {
   const [loading, setLoading] = useState(true);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  // Mobile Filter Bottom Sheet Toggle
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
   // Compare selection tray
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
 
@@ -53,7 +59,6 @@ function SearchContent() {
     if (verifiedOnly) params.set('verifiedOnly', 'true');
     if (sortBy) params.set('sortBy', sortBy);
 
-    // Keep browser URL search params in sync to preserve user state on navigation back
     if (typeof window !== 'undefined') {
       const newQuery = params.toString();
       window.history.replaceState(null, '', newQuery ? `/search?${newQuery}` : '/search');
@@ -83,9 +88,23 @@ function SearchContent() {
     fetchResults();
   }, [city, propertyType, accommodationType, furnishing, maxRent, maxTotalUpfront, zeroBrokerage, foodIncluded, verifiedOnly, sortBy]);
 
-  const handleApplyFilter = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleApplyFilter = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setMobileFilterOpen(false);
     fetchResults();
+  };
+
+  const handleResetFilters = () => {
+    setPropertyType('all');
+    setAccommodationType('all');
+    setFurnishing('all');
+    setMaxRent('');
+    setMaxTotalUpfront('');
+    setZeroBrokerage(false);
+    setFoodIncluded(false);
+    setVerifiedOnly(false);
+    setSortBy('availability_new');
+    setMobileFilterOpen(false);
   };
 
   const handleToggleCompare = (id: string) => {
@@ -110,21 +129,33 @@ function SearchContent() {
     router.push(`/compare?ids=${selectedForCompare.join(',')}`);
   };
 
+  // Count active non-default filters for mobile badge
+  const activeFilterCount = [
+    propertyType !== 'all',
+    accommodationType !== 'all',
+    furnishing !== 'all',
+    Boolean(maxRent),
+    Boolean(maxTotalUpfront),
+    zeroBrokerage,
+    foodIncluded,
+    verifiedOnly,
+  ].filter(Boolean).length;
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <DemoRoleBar />
       <Navbar />
 
-      {/* Top Search & Filter Bar */}
-      <div style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '1rem 0' }}>
+      {/* Top Search & Filter Control Bar */}
+      <div style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0.85rem 0', position: 'sticky', top: '4.25rem', zIndex: 40, backdropFilter: 'blur(12px)' }}>
         <div className="homiq-container">
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap' }}>
             {/* City Selector */}
             <select
               className="form-select"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              style={{ width: 'auto', minWidth: '160px', fontWeight: 600 }}
+              style={{ width: 'auto', minWidth: '135px', fontWeight: 700, padding: '0.6rem 0.85rem' }}
             >
               <option value="Bengaluru">Bengaluru</option>
               <option value="Mumbai">Mumbai</option>
@@ -134,68 +165,134 @@ function SearchContent() {
               <option value="all">All Cities</option>
             </select>
 
-            {/* Keyword search input */}
-            <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+            {/* Keyword Search Input */}
+            <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
               <input
                 type="text"
-                placeholder="Search by neighbourhood (e.g. Koramangala, Powai, HSR, Cyber City)..."
+                placeholder="Search neighbourhood (Koramangala, Powai, HSR)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && fetchResults()}
                 className="form-input"
-                style={{ paddingLeft: '2.5rem' }}
+                style={{ paddingLeft: '2.4rem', paddingRight: '0.85rem', height: '42px' }}
               />
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
+              <Search size={16} style={{ position: 'absolute', left: '12px', top: '13px', color: '#94a3b8' }} />
             </div>
 
-            <button onClick={fetchResults} className="btn btn-primary btn-sm" style={{ height: '40px' }}>
-              Search
+            {/* Mobile Filter Button Toggle */}
+            <button
+              onClick={() => setMobileFilterOpen(true)}
+              className="btn btn-secondary mobile-filter-trigger"
+              style={{ height: '42px', padding: '0.5rem 0.85rem', position: 'relative' }}
+            >
+              <SlidersHorizontal size={16} color="var(--primary)" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span style={{
+                  background: 'var(--accent)',
+                  color: '#ffffff',
+                  fontSize: '0.6875rem',
+                  fontWeight: 800,
+                  width: '18px',
+                  height: '18px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginLeft: '0.2rem',
+                }}>
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
 
-            {/* View Mode Toggle */}
+            {/* View Mode Toggle (List vs Map) */}
             <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: '8px', padding: '2px', marginLeft: 'auto' }}>
               <button
                 onClick={() => setViewMode('list')}
                 className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : ''}`}
-                style={{ borderRadius: '6px', padding: '0.35rem 0.75rem' }}
+                style={{ borderRadius: '6px', padding: '0.35rem 0.65rem' }}
+                aria-label="List view"
               >
                 <List size={16} />
-                <span>List</span>
+                <span className="hide-on-tiny-screen">List</span>
               </button>
               <button
                 onClick={() => setViewMode('map')}
                 className={`btn btn-sm ${viewMode === 'map' ? 'btn-primary' : ''}`}
-                style={{ borderRadius: '6px', padding: '0.35rem 0.75rem' }}
+                style={{ borderRadius: '6px', padding: '0.35rem 0.65rem' }}
+                aria-label="Map view"
               >
                 <Map size={16} />
-                <span>Map</span>
+                <span className="hide-on-tiny-screen">Map</span>
               </button>
             </div>
+          </div>
+
+          {/* Quick-Filter Horizontal Scrollable Pill Ribbon (Crucial for mobile ergonomics) */}
+          <div className="pill-ribbon" style={{ marginTop: '0.75rem', paddingBottom: '0.25rem' }}>
+            <button
+              onClick={() => { setPropertyType('all'); setZeroBrokerage(false); setVerifiedOnly(false); }}
+              className={`pill-chip ${propertyType === 'all' && !zeroBrokerage && !verifiedOnly ? 'active' : ''}`}
+            >
+              All Types
+            </button>
+            <button
+              onClick={() => setPropertyType(prev => prev === 'pg' ? 'all' : 'pg')}
+              className={`pill-chip ${propertyType === 'pg' ? 'active' : ''}`}
+            >
+              <Building2 size={13} />
+              <span>PG & Co-Living</span>
+            </button>
+            <button
+              onClick={() => setPropertyType(prev => prev === 'flat' ? 'all' : 'flat')}
+              className={`pill-chip ${propertyType === 'flat' ? 'active' : ''}`}
+            >
+              <Bed size={13} />
+              <span>Flats / BHK</span>
+            </button>
+            <button
+              onClick={() => setZeroBrokerage(prev => !prev)}
+              className={`pill-chip ${zeroBrokerage ? 'active' : ''}`}
+            >
+              <Sparkles size={13} color={zeroBrokerage ? '#ffffff' : 'var(--gold)'} />
+              <span>Zero Brokerage</span>
+            </button>
+            <button
+              onClick={() => setVerifiedOnly(prev => !prev)}
+              className={`pill-chip ${verifiedOnly ? 'active' : ''}`}
+            >
+              <CheckCircle2 size={13} color={verifiedOnly ? '#ffffff' : '#16a34a'} />
+              <span>Verified Only</span>
+            </button>
+            <button
+              onClick={() => setMaxRent(prev => prev === '25000' ? '' : '25000')}
+              className={`pill-chip ${maxRent === '25000' ? 'active' : ''}`}
+            >
+              <span>Under ₹25k</span>
+            </button>
+            <button
+              onClick={() => setFoodIncluded(prev => !prev)}
+              className={`pill-chip ${foodIncluded ? 'active' : ''}`}
+            >
+              <span>Meals Included</span>
+            </button>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="homiq-container" style={{ padding: '2rem 1.25rem', flex: 1 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem', alignItems: 'flex-start' }}>
-          {/* Left Filter Sidebar */}
-          <aside className="card" style={{ padding: '1.25rem' }}>
+      <div className="homiq-container" style={{ padding: '1.75rem 1.25rem', flex: 1 }}>
+        <div className="search-layout-grid">
+          {/* Left Filter Sidebar (Desktop only) */}
+          <aside className="card search-desktop-sidebar" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <h3 style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <SlidersHorizontal size={16} color="var(--primary)" />
                 <span>Filters</span>
               </h3>
               <button
-                onClick={() => {
-                  setPropertyType('all');
-                  setAccommodationType('all');
-                  setFurnishing('all');
-                  setMaxRent('');
-                  setMaxTotalUpfront('');
-                  setZeroBrokerage(false);
-                  setFoodIncluded(false);
-                  setVerifiedOnly(false);
-                }}
+                onClick={handleResetFilters}
                 style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600 }}
               >
                 Reset All
@@ -219,15 +316,202 @@ function SearchContent() {
               <div className="form-group">
                 <label className="form-label">Room Occupancy</label>
                 <select className="form-select" value={accommodationType} onChange={e => setAccommodationType(e.target.value)}>
-                  <option value="all">Any Occupancy</option>
+                  <option value="all">Any Configuration</option>
                   <option value="entire_apartment">Entire Flat / House</option>
-                  <option value="private_room">Private Single Room</option>
-                  <option value="shared_room">Shared Room / Bed</option>
+                  <option value="private_room">Private Bedroom</option>
+                  <option value="shared_room">Shared Bed (PG / Hostel)</option>
+                </select>
+              </div>
+
+              {/* Max Monthly Rent */}
+              <div className="form-group">
+                <label className="form-label">Max Monthly Rent</label>
+                <select className="form-select" value={maxRent} onChange={e => setMaxRent(e.target.value)}>
+                  <option value="">Any Monthly Rent</option>
+                  <option value="15000">Up to ₹15,000</option>
+                  <option value="25000">Up to ₹25,000</option>
+                  <option value="35000">Up to ₹35,000</option>
+                  <option value="50000">Up to ₹50,000</option>
+                  <option value="80000">Up to ₹80,000</option>
                 </select>
               </div>
 
               {/* Furnishing */}
               <div className="form-group">
+                <label className="form-label">Furnishing Status</label>
+                <select className="form-select" value={furnishing} onChange={e => setFurnishing(e.target.value)}>
+                  <option value="all">Any Furnishing</option>
+                  <option value="fully_furnished">Fully Furnished</option>
+                  <option value="semi_furnished">Semi Furnished</option>
+                  <option value="unfurnished">Unfurnished</option>
+                </select>
+              </div>
+
+              {/* Checkboxes */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', margin: '1.25rem 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={zeroBrokerage} onChange={e => setZeroBrokerage(e.target.checked)} />
+                  <span>Zero Brokerage Only</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={verifiedOnly} onChange={e => setVerifiedOnly(e.target.checked)} />
+                  <span>Document Verified Only</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={foodIncluded} onChange={e => setFoodIncluded(e.target.checked)} />
+                  <span>Meals Included (PG/Hostel)</span>
+                </label>
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-full">
+                Apply Filters
+              </button>
+            </form>
+          </aside>
+
+          {/* Right Main Results Section */}
+          <main style={{ minWidth: 0 }}>
+            {/* Header info & Sorting */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div>
+                <h1 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                  Accommodations in {city === 'all' ? 'India' : city}
+                </h1>
+                <div style={{ fontSize: '0.8125rem', color: '#64748b' }}>
+                  {loading ? (
+                    'Searching verified accommodations...'
+                  ) : searchError ? (
+                    <span style={{ color: 'var(--danger)' }}>Search failed</span>
+                  ) : (
+                    `Showing ${listings.length} of ${totalCount} available options (${listings.filter(l => l.verifiedListing).length} document verified)`
+                  )}
+                </div>
+              </div>
+
+              {/* Sort By Dropdown */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.8125rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                  <ArrowUpDown size={13} /> Sort:
+                </span>
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                  className="form-select"
+                  style={{ width: 'auto', padding: '0.4rem 0.75rem', fontSize: '0.8125rem', fontWeight: 600 }}
+                >
+                  <option value="availability_new">Verified & Fresh First</option>
+                  <option value="rent_asc">Rent: Low to High</option>
+                  <option value="rent_desc">Rent: High to Low</option>
+                  <option value="cost_asc">Lowest Upfront Move-In Cost</option>
+                  <option value="rating">Top Rated</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Error State */}
+            {searchError ? (
+              <div className="card" style={{ padding: '3rem 1.5rem', textAlign: 'center', background: '#fef2f2', border: '1px solid #fecaca' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--danger)', marginBottom: '0.5rem' }}>
+                  Search Temporarily Unavailable
+                </h3>
+                <p style={{ color: '#7f1d1d', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
+                  {searchError}. Please retry or adjust your search filters.
+                </p>
+                <button onClick={fetchResults} className="btn btn-primary btn-sm">
+                  <RefreshCw size={14} /> Retry Search
+                </button>
+              </div>
+            ) : loading ? (
+              /* Loading Skeleton Grid */
+              <div className="grid-2">
+                {[1, 2, 3, 4].map(n => (
+                  <div key={n} className="card" style={{ height: '360px', background: '#f1f5f9', opacity: 0.6, animation: 'pulseGlow 1.5s infinite' }} />
+                ))}
+              </div>
+            ) : listings.length === 0 ? (
+              /* Empty Results State */
+              <div className="card" style={{ padding: '3.5rem 1.5rem', textAlign: 'center' }}>
+                <Building2 size={36} color="var(--primary)" style={{ margin: '0 auto 0.75rem' }} />
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+                  No Accommodations Matching Criteria
+                </h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', maxWidth: '440px', margin: '0 auto 1.5rem' }}>
+                  We couldn&apos;t find verified homes matching your exact filters in {city}. Try clearing some filters or searching adjacent tech corridors.
+                </p>
+                <button onClick={handleResetFilters} className="btn btn-primary btn-sm">
+                  Clear All Filters
+                </button>
+              </div>
+            ) : viewMode === 'list' ? (
+              /* Results List Grid */
+              <div className="grid-2">
+                {listings.map(item => (
+                  <ListingCard
+                    key={item.id}
+                    listing={item}
+                    showCompareToggle
+                    isSelectedForCompare={selectedForCompare.includes(item.id)}
+                    onToggleCompare={handleToggleCompare}
+                  />
+                ))}
+              </div>
+            ) : (
+              /* Map View */
+              <div className="card" style={{ padding: '1rem', height: '640px' }}>
+                <InteractiveMap listings={listings} />
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+
+      {/* ================================================================ */}
+      {/* MOBILE SLIDE-UP FILTER BOTTOM SHEET */}
+      {/* ================================================================ */}
+      {mobileFilterOpen && (
+        <div className="mobile-drawer-overlay" onClick={() => setMobileFilterOpen(false)}>
+          <div
+            className="mobile-filter-sheet"
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <SlidersHorizontal size={18} color="var(--primary)" />
+                <span>Filter Accommodations</span>
+              </h3>
+              <button onClick={() => setMobileFilterOpen(false)} style={{ padding: '0.35rem', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Category */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Accommodation Type</label>
+                <select className="form-select" value={propertyType} onChange={e => setPropertyType(e.target.value)}>
+                  <option value="all">All Types</option>
+                  <option value="flat">Flats & Apartments</option>
+                  <option value="room">Private Rooms</option>
+                  <option value="pg">PG & Co-Living</option>
+                  <option value="hostel">Hostels</option>
+                </select>
+              </div>
+
+              {/* Max Monthly Rent */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Max Monthly Rent</label>
+                <select className="form-select" value={maxRent} onChange={e => setMaxRent(e.target.value)}>
+                  <option value="">Any Monthly Rent</option>
+                  <option value="15000">Up to ₹15,000</option>
+                  <option value="25000">Up to ₹25,000</option>
+                  <option value="35000">Up to ₹35,000</option>
+                  <option value="50000">Up to ₹50,000</option>
+                  <option value="80000">Up to ₹80,000</option>
+                </select>
+              </div>
+
+              {/* Furnishing */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Furnishing</label>
                 <select className="form-select" value={furnishing} onChange={e => setFurnishing(e.target.value)}>
                   <option value="all">Any Furnishing</option>
@@ -237,216 +521,113 @@ function SearchContent() {
                 </select>
               </div>
 
-              {/* Max Monthly Rent */}
-              <div className="form-group">
-                <label className="form-label">Max Monthly Rent (₹)</label>
-                <select className="form-select" value={maxRent} onChange={e => setMaxRent(e.target.value)}>
-                  <option value="">Any Rent</option>
-                  <option value="12000">Up to ₹12,000</option>
-                  <option value="20000">Up to ₹20,000</option>
-                  <option value="30000">Up to ₹30,000</option>
-                  <option value="45000">Up to ₹45,000</option>
-                  <option value="70000">Up to ₹70,000</option>
-                </select>
-              </div>
-
-              {/* Max Total Upfront Move-In Cost */}
-              <div className="form-group">
-                <label className="form-label">
-                  Max Upfront Move-In Cost (₹)
-                  <span title="Filters by sum of Security Deposit + First Month Rent + Brokerage" style={{ color: '#94a3b8', cursor: 'help' }}>ℹ</span>
-                </label>
-                <select className="form-select" value={maxTotalUpfront} onChange={e => setMaxTotalUpfront(e.target.value)}>
-                  <option value="">Any Upfront Total</option>
-                  <option value="40000">Under ₹40,000</option>
-                  <option value="80000">Under ₹80,000</option>
-                  <option value="120000">Under ₹1,20,000</option>
-                  <option value="200000">Under ₹2,00,000</option>
-                </select>
-              </div>
-
               {/* Checkboxes */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', margin: '1.25rem 0' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={zeroBrokerage}
-                    onChange={e => setZeroBrokerage(e.target.checked)}
-                  />
-                  <span>Zero Brokerage Only (Direct Owner)</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.5rem 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={zeroBrokerage} onChange={e => setZeroBrokerage(e.target.checked)} />
+                  <span>Zero Brokerage Only</span>
                 </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={foodIncluded}
-                    onChange={e => setFoodIncluded(e.target.checked)}
-                  />
-                  <span>Food / Meals Included (PG/Co-Living)</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={verifiedOnly} onChange={e => setVerifiedOnly(e.target.checked)} />
+                  <span>Verified Landlords / Title Verified</span>
                 </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={verifiedOnly}
-                    onChange={e => setVerifiedOnly(e.target.checked)}
-                  />
-                  <span>Verified Listings Only</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={foodIncluded} onChange={e => setFoodIncluded(e.target.checked)} />
+                  <span>Meals Included (PG/Hostel)</span>
                 </label>
               </div>
-            </form>
-          </aside>
 
-          {/* Results Area */}
-          <div>
-            {/* Results Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                  Accommodations in {city === 'all' ? 'All Locations' : city}
-                </h1>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                  {loading
-                    ? 'Searching available homes...'
-                    : searchError
-                    ? 'Search error encountered'
-                    : `Showing ${listings.length} of ${totalCount} available options (${listings.filter(l => l.verifiedListing).length} document verified)`}
-                </p>
-              </div>
-
-              {/* Sort By Dropdown */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>Sort by:</span>
-                <select
-                  className="form-select"
-                  value={sortBy}
-                  onChange={e => setSortBy(e.target.value)}
-                  style={{ width: 'auto', fontSize: '0.8125rem' }}
-                >
-                  <option value="availability_new">Freshness (Confirmed Recently)</option>
-                  <option value="rent_asc">Rent: Low to High</option>
-                  <option value="rent_desc">Rent: High to Low</option>
-                  <option value="cost_asc">Total Upfront Cost: Low to High</option>
-                  <option value="rating">Top Rated by Renters</option>
-                </select>
+              {/* Action Buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={handleResetFilters} className="btn btn-secondary btn-full">
+                  Reset
+                </button>
+                <button type="button" onClick={() => handleApplyFilter()} className="btn btn-primary btn-full">
+                  Show Results
+                </button>
               </div>
             </div>
-
-            {/* View Mode: Map vs List */}
-            {viewMode === 'map' && listings.length > 0 && (
-              <div style={{ marginBottom: '2rem' }}>
-                <InteractiveMap
-                  latitude={listings[0].latitude}
-                  longitude={listings[0].longitude}
-                  publicLocation={`${city} Metro Area`}
-                  city={city}
-                  neighbourhood="Major Tech Corridors"
-                />
-              </div>
-            )}
-
-            {/* Search States: Loading, Error, Empty, Results */}
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-                <RefreshCw size={32} className="animate-spin" color="var(--primary)" style={{ margin: '0 auto 1rem' }} />
-                <p style={{ color: 'var(--text-muted)' }}>Loading transparent accommodations...</p>
-              </div>
-            ) : searchError ? (
-              <div className="card" style={{ padding: '3.5rem 1.5rem', textAlign: 'center', borderLeft: '4px solid #b91c1c' }}>
-                <div style={{ background: '#fee2e2', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#b91c1c' }}>
-                  <Filter size={28} />
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#991b1b' }}>Failed to retrieve accommodations</h3>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 1.5rem', fontSize: '0.9rem' }}>
-                  {searchError}. Please verify your connectivity or try again.
-                </p>
-                <button
-                  onClick={fetchResults}
-                  className="btn btn-primary btn-sm"
-                >
-                  Retry Search
-                </button>
-              </div>
-            ) : listings.length === 0 ? (
-              <div className="card" style={{ padding: '3.5rem 1.5rem', textAlign: 'center' }}>
-                <div style={{ background: '#f1f5f9', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#94a3b8' }}>
-                  <Search size={28} />
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>No matching accommodations found</h3>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 1.5rem', fontSize: '0.9rem' }}>
-                  Try relaxing your rent or upfront cost filters, or search across all accommodation types.
-                </p>
-                <button
-                  onClick={() => {
-                    setPropertyType('all');
-                    setAccommodationType('all');
-                    setMaxRent('');
-                    setMaxTotalUpfront('');
-                    setZeroBrokerage(false);
-                    setFoodIncluded(false);
-                    setVerifiedOnly(false);
-                    fetchResults();
-                  }}
-                  className="btn btn-primary btn-sm"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            ) : (
-              <div className="grid-2">
-                {listings.map(item => (
-                  <ListingCard
-                    key={item.id}
-                    listing={item}
-                    showCompareToggle={true}
-                    isSelectedForCompare={selectedForCompare.includes(item.id)}
-                    onToggleCompare={handleToggleCompare}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Sticky Bottom Compare Bar if items selected */}
+      {/* Floating Compare Drawer Bar if items selected */}
       {selectedForCompare.length > 0 && (
         <div style={{
           position: 'fixed',
-          bottom: '20px',
+          bottom: '4.75rem',
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#0f172a',
+          background: 'rgba(15, 23, 42, 0.95)',
+          backdropFilter: 'blur(12px)',
           color: '#ffffff',
-          borderRadius: '16px',
-          padding: '0.85rem 1.5rem',
+          borderRadius: '9999px',
+          padding: '0.5rem 1.25rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '1.5rem',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.35)',
-          zIndex: 40,
+          gap: '1rem',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+          zIndex: 85,
+          whiteSpace: 'nowrap',
+          maxWidth: '92%',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Scale size={18} color="#f59e0b" />
-            <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-              {selectedForCompare.length} homes selected for side-by-side comparison
-            </span>
-          </div>
-
-          <button onClick={openComparePage} className="btn btn-accent btn-sm" style={{ fontWeight: 700 }}>
-            Compare Now
+          <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+            {selectedForCompare.length} selected to compare
+          </span>
+          <button onClick={openComparePage} className="btn btn-accent btn-sm" style={{ padding: '0.35rem 0.85rem' }}>
+            <Scale size={14} /> Compare Now
           </button>
-
-          <button
-            onClick={() => setSelectedForCompare([])}
-            style={{ color: '#94a3b8', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
-          >
-            <X size={14} /> Clear
+          <button onClick={() => setSelectedForCompare([])} style={{ color: '#94a3b8' }}>
+            <X size={16} />
           </button>
         </div>
       )}
 
       <Footer />
+
+      <style jsx>{`
+        .search-layout-grid {
+          display: grid;
+          grid-template-columns: 280px 1fr;
+          gap: 2rem;
+          align-items: flex-start;
+        }
+
+        .mobile-filter-trigger {
+          display: none;
+        }
+
+        @media (max-width: 900px) {
+          .search-layout-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+          .search-desktop-sidebar {
+            display: none;
+          }
+          .mobile-filter-trigger {
+            display: inline-flex;
+          }
+          .hide-on-tiny-screen {
+            display: none;
+          }
+        }
+
+        .mobile-filter-sheet {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: #ffffff;
+          border-top-left-radius: var(--radius-xl);
+          border-top-right-radius: var(--radius-xl);
+          padding: 1.5rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+          box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.25);
+          animation: slideUpSheet 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          max-height: 85vh;
+          overflow-y: auto;
+        }
+      `}</style>
     </div>
   );
 }
@@ -455,7 +636,10 @@ export default function SearchPage() {
   return (
     <Suspense fallback={
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        Loading accommodations search...
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 600, color: 'var(--primary)' }}>
+          <RefreshCw size={20} className="animate-spin" />
+          <span>Loading verified accommodations...</span>
+        </div>
       </div>
     }>
       <SearchContent />
