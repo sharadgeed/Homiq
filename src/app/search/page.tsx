@@ -32,12 +32,14 @@ function SearchContent() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   // Compare selection tray
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
 
   const fetchResults = () => {
     setLoading(true);
+    setSearchError(null);
     const params = new URLSearchParams();
     if (city && city !== 'all') params.set('city', city);
     if (searchQuery) params.set('search', searchQuery);
@@ -51,13 +53,29 @@ function SearchContent() {
     if (verifiedOnly) params.set('verifiedOnly', 'true');
     if (sortBy) params.set('sortBy', sortBy);
 
+    // Keep browser URL search params in sync to preserve user state on navigation back
+    if (typeof window !== 'undefined') {
+      const newQuery = params.toString();
+      window.history.replaceState(null, '', newQuery ? `/search?${newQuery}` : '/search');
+    }
+
     fetch(`/api/listings?${params.toString()}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Service temporarily unavailable (${res.status})`);
+        }
+        return res.json();
+      })
       .then(data => {
         setListings(data.listings || []);
         setTotalCount(data.total || 0);
       })
-      .catch(err => console.error(err))
+      .catch(err => {
+        console.error('Search fetch error:', err);
+        setSearchError(err.message || 'Unable to load accommodations');
+        setListings([]);
+        setTotalCount(0);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -288,7 +306,11 @@ function SearchContent() {
                   Accommodations in {city === 'all' ? 'All Locations' : city}
                 </h1>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                  Showing {listings.length} of {totalCount} verified options
+                  {loading
+                    ? 'Searching available homes...'
+                    : searchError
+                    ? 'Search error encountered'
+                    : `Showing ${listings.length} of ${totalCount} available options (${listings.filter(l => l.verifiedListing).length} document verified)`}
                 </p>
               </div>
 
@@ -323,18 +345,34 @@ function SearchContent() {
               </div>
             )}
 
-            {/* Listings Grid */}
+            {/* Search States: Loading, Error, Empty, Results */}
             {loading ? (
               <div style={{ textAlign: 'center', padding: '4rem 0' }}>
                 <RefreshCw size={32} className="animate-spin" color="var(--primary)" style={{ margin: '0 auto 1rem' }} />
                 <p style={{ color: 'var(--text-muted)' }}>Loading transparent accommodations...</p>
+              </div>
+            ) : searchError ? (
+              <div className="card" style={{ padding: '3.5rem 1.5rem', textAlign: 'center', borderLeft: '4px solid #b91c1c' }}>
+                <div style={{ background: '#fee2e2', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#b91c1c' }}>
+                  <Filter size={28} />
+                </div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#991b1b' }}>Failed to retrieve accommodations</h3>
+                <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 1.5rem', fontSize: '0.9rem' }}>
+                  {searchError}. Please verify your connectivity or try again.
+                </p>
+                <button
+                  onClick={fetchResults}
+                  className="btn btn-primary btn-sm"
+                >
+                  Retry Search
+                </button>
               </div>
             ) : listings.length === 0 ? (
               <div className="card" style={{ padding: '3.5rem 1.5rem', textAlign: 'center' }}>
                 <div style={{ background: '#f1f5f9', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#94a3b8' }}>
                   <Search size={28} />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>No matching listings found</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>No matching accommodations found</h3>
                 <p style={{ color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 1.5rem', fontSize: '0.9rem' }}>
                   Try relaxing your rent or upfront cost filters, or search across all accommodation types.
                 </p>
@@ -346,6 +384,7 @@ function SearchContent() {
                     setMaxTotalUpfront('');
                     setZeroBrokerage(false);
                     setFoodIncluded(false);
+                    setVerifiedOnly(false);
                     fetchResults();
                   }}
                   className="btn btn-primary btn-sm"

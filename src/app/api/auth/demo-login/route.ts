@@ -6,6 +6,11 @@ import { jsonResponse, errorResponse } from '@/lib/api-response';
 
 export async function POST(req: NextRequest) {
   try {
+    // Strictly disable demo login in production unless explicitly permitted for test preview
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_LOGIN !== 'true') {
+      return errorResponse('Demo login is disabled in this environment', 403);
+    }
+
     const { role } = await req.json();
 
     const allowedRoles = ['renter', 'owner', 'operator', 'broker', 'admin'];
@@ -18,7 +23,7 @@ export async function POST(req: NextRequest) {
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
 
     if (!user) {
-      return errorResponse(`Demo user for role ${role} not found in database. Please run seed.`, 404);
+      return errorResponse(`Demo user for role ${role} not available. Initial seed may be pending.`, 404);
     }
 
     const token = await createSessionToken({

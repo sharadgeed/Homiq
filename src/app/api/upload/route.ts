@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 import fs from 'fs';
 import path from 'path';
 
@@ -49,6 +49,6 @@ export async function POST(req: NextRequest) {
       mimeType: file.type,
     }, 201);
   } catch (err: any) {
-    return errorResponse(err.message || 'File upload failed', 500);
+    return handleApiError(err);
   }
 }

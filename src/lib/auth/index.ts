@@ -17,6 +17,24 @@ export interface SessionPayload {
   name: string;
 }
 
+export class AuthError extends Error {
+  status: number;
+  constructor(message: string = 'UNAUTHORIZED: Authentication required to perform this action.') {
+    super(message);
+    this.name = 'AuthError';
+    this.status = 401;
+  }
+}
+
+export class ForbiddenError extends Error {
+  status: number;
+  constructor(message: string = 'FORBIDDEN: Access restricted for this role.') {
+    super(message);
+    this.name = 'ForbiddenError';
+    this.status = 403;
+  }
+}
+
 export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10);
   return bcrypt.hash(password, salt);
@@ -90,7 +108,7 @@ export async function getCurrentUser(): Promise<User | null> {
 export async function requireAuth(): Promise<User> {
   const user = await getCurrentUser();
   if (!user) {
-    throw new Error('UNAUTHORIZED: Authentication required to perform this action.');
+    throw new AuthError('UNAUTHORIZED: Authentication required to perform this action.');
   }
   return user;
 }
@@ -98,7 +116,7 @@ export async function requireAuth(): Promise<User> {
 export async function requireRole(allowedRoles: UserRole[]): Promise<User> {
   const user = await requireAuth();
   if (!allowedRoles.includes(user.role)) {
-    throw new Error(`FORBIDDEN: Access restricted. Required role: [${allowedRoles.join(', ')}], current role: ${user.role}`);
+    throw new ForbiddenError(`FORBIDDEN: Access restricted. Required role: [${allowedRoles.join(', ')}], current role: ${user.role}`);
   }
   return user;
 }

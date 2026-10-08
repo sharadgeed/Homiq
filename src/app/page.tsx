@@ -35,7 +35,7 @@ export default async function HomePage() {
               border: '1px solid rgba(255, 255, 255, 0.2)'
             }}>
               <ShieldCheck size={16} />
-              <span>India's Trustworthy Rental Platform • Verified Landlords & Operators</span>
+              <span>India-Focused Rental Platform • Transparent Costs & Confirmed Availability</span>
             </div>
 
             <h1 className="hero-title">
@@ -200,10 +200,10 @@ export default async function HomePage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Handpicked & Title-Checked
+                Transparent Pricing & Confirmed Status
               </span>
               <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)', marginTop: '0.25rem' }}>
-                Verified Homes in Top Indian Cities
+                Accommodations in Top Indian Tech Metros
               </h2>
             </div>
             <Link href="/search" className="btn btn-outline btn-sm">
@@ -212,11 +212,22 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="grid-3">
-            {listings.map(item => (
-              <ListingCard key={item.id} listing={item} />
-            ))}
-          </div>
+          {listings.length === 0 ? (
+            <div className="card" style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
+              <Building size={32} color="var(--primary)" style={{ margin: '0 auto 0.75rem' }} />
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem' }}>Accommodations Catalog Initializing</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
+                Search across Bengaluru, Mumbai, Delhi NCR, Pune, and Hyderabad to explore transparent listings.
+              </p>
+              <Link href="/search" className="btn btn-primary btn-sm">Search All Metro Listings</Link>
+            </div>
+          ) : (
+            <div className="grid-3">
+              {listings.map(item => (
+                <ListingCard key={item.id} listing={item} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -331,24 +342,24 @@ export default async function HomePage() {
             <div style={{ background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(10px)', borderRadius: '16px', padding: '1.75rem', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
               <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <CheckCircle2 color="#34d399" size={20} />
-                <span>The Homiq Move-In Guarantee</span>
+                <span>The Homiq Move-In Trust Protocol</span>
               </h4>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.9rem', color: '#e2e8f0' }}>
                 <li style={{ display: 'flex', gap: '0.5rem' }}>
                   <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
-                  <span>Mandatory 10-point electrical, plumbing & meter inspection.</span>
+                  <span>Mutual 10-point electrical, plumbing & meter inspection checklist.</span>
                 </li>
                 <li style={{ display: 'flex', gap: '0.5rem' }}>
                   <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
-                  <span>Direct landlord/renter digital sign-off before deposit transfer.</span>
+                  <span>Voluntary tenant & landlord digital sign-off with timestamped condition records.</span>
                 </li>
                 <li style={{ display: 'flex', gap: '0.5rem' }}>
                   <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
-                  <span>RERA compliance checks on representative brokers.</span>
+                  <span>Mandatory RERA registration number disclosures for broker agents.</span>
                 </li>
                 <li style={{ display: 'flex', gap: '0.5rem' }}>
                   <span style={{ color: '#34d399', fontWeight: 'bold' }}>✓</span>
-                  <span>Proactive moderation triage against bait-and-switch listings.</span>
+                  <span>Community moderation triage against misleading pricing and ghost listings.</span>
                 </li>
               </ul>
             </div>

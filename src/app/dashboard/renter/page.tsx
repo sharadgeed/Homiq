@@ -17,6 +17,7 @@ export default function RenterDashboard() {
   const [viewings, setViewings] = useState<Viewing[]>([]);
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [moveInRecords, setMoveInRecords] = useState<MoveInRecord[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   // Message reply state
@@ -27,11 +28,13 @@ export default function RenterDashboard() {
   const fetchData = () => {
     setLoading(true);
     Promise.all([
+      fetch('/api/auth/me').then(r => r.json()),
       fetch('/api/viewings').then(r => r.json()),
       fetch('/api/enquiries').then(r => r.json()),
       fetch('/api/move-in').then(r => r.json()),
     ])
-      .then(([vData, eData, mData]) => {
+      .then(([uData, vData, eData, mData]) => {
+        if (uData?.user) setCurrentUser(uData.user);
         setViewings(vData.viewings || []);
         setEnquiries(eData.enquiries || []);
         setMoveInRecords(mData.records || []);
@@ -83,13 +86,17 @@ export default function RenterDashboard() {
               <span className="badge" style={{ background: '#dcfce7', color: '#166534', fontWeight: 700 }}>
                 Renter Portal
               </span>
-              <span className="badge badge-verified">ID Verified (Aadhaar / DigiLocker)</span>
+              <span className="badge badge-verified">
+                {currentUser?.verificationStatus === 'verified'
+                  ? 'Identity Document Verified'
+                  : 'Verification In Progress'}
+              </span>
             </div>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)' }}>
               My Accommodation Hub
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-              Track scheduled in-person & video visits, chat with landlords, and inspect condition records.
+              {currentUser ? `${currentUser.name} • ` : ''}Track scheduled in-person & video visits, chat with landlords, and inspect condition records.
             </p>
           </div>
 

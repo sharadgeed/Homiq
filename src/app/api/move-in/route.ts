@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireAuth, logAuditEvent } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { getListingById } from '@/lib/db/queries';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     return jsonResponse({ records: parsed });
   } catch (err: any) {
-    return errorResponse(err.message || 'Unauthorized', 401);
+    return handleApiError(err);
   }
 }
 
@@ -110,6 +110,6 @@ export async function POST(req: NextRequest) {
 
     return jsonResponse({ success: true, recordId: id }, 201);
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to save move-in record', 500);
+    return handleApiError(err);
   }
 }

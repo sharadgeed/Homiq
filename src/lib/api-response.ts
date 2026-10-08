@@ -16,6 +16,17 @@ export function errorResponse(message: string, status: number = 400, details?: a
   );
 }
 
+export function handleApiError(err: any) {
+  if (err?.name === 'AuthError' || err?.status === 401) {
+    return errorResponse(err.message || 'Authentication required', 401);
+  }
+  if (err?.name === 'ForbiddenError' || err?.status === 403) {
+    return errorResponse(err.message || 'Access forbidden', 403);
+  }
+  console.error('Unhandled API Error:', err);
+  return errorResponse(err?.message || 'Internal server error', err?.status || 500);
+}
+
 export function formatINR(amount: number): string {
   if (isNaN(amount) || amount === null || amount === undefined) return '₹0';
   return new Intl.NumberFormat('en-IN', {

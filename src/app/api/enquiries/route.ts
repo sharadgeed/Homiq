@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireAuth, logAuditEvent } from '@/lib/auth';
 import { getEnquiriesForUser, getListingById } from '@/lib/db/queries';
 import { getDb } from '@/lib/db';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ export async function GET() {
     const enquiries = getEnquiriesForUser(user.id, user.role);
     return jsonResponse({ enquiries });
   } catch (err: any) {
-    return errorResponse(err.message || 'Unauthorized', 401);
+    return handleApiError(err);
   }
 }
 
@@ -75,6 +75,6 @@ export async function POST(req: NextRequest) {
 
     return jsonResponse({ success: true, enquiryId }, 201);
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to create enquiry', 500);
+    return handleApiError(err);
   }
 }

@@ -1,19 +1,20 @@
 import { NextRequest } from 'next/server';
 import { getListingById } from '@/lib/db/queries';
-import { requireAuth, logAuditEvent } from '@/lib/auth';
+import { requireAuth, getCurrentUser, logAuditEvent } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const listing = getListingById(id);
+    const viewer = await getCurrentUser();
+    const listing = getListingById(id, viewer?.id, viewer?.role);
     if (!listing) {
       return errorResponse('Listing not found', 404);
     }
     return jsonResponse({ listing });
   } catch (err: any) {
-    return errorResponse(err.message || 'Error fetching listing', 500);
+    return handleApiError(err);
   }
 }
 
@@ -96,9 +97,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     logAuditEvent(user.id, 'UPDATE_LISTING', 'listing', id, body);
 
-    const updated = getListingById(id);
+    const updated = getListingById(id, user.id, user.role);
     return jsonResponse({ success: true, listing: updated });
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to update listing', 500);
+    return handleApiError(err);
   }
 }

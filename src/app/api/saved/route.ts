@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { getSavedListings, toggleSaveListing } from '@/lib/db/queries';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export async function GET() {
     const saved = getSavedListings(user.id);
     return jsonResponse({ saved });
   } catch (err: any) {
-    return errorResponse(err.message || 'Unauthorized', 401);
+    return handleApiError(err);
   }
 }
 
@@ -27,6 +27,6 @@ export async function POST(req: NextRequest) {
     const isSaved = toggleSaveListing(user.id, listingId);
     return jsonResponse({ success: true, saved: isSaved });
   } catch (err: any) {
-    return errorResponse(err.message || 'Unauthorized', 401);
+    return handleApiError(err);
   }
 }

@@ -36,6 +36,18 @@ export function getDb(): Database.Database {
     dbInstance.pragma('journal_mode = WAL');
     dbInstance.pragma('foreign_keys = ON');
     initSchema(dbInstance);
+
+    // Auto-seed catalog if brand new / empty database (e.g. Vercel serverless /tmp cold start)
+    try {
+      const userCount = (dbInstance.prepare('SELECT COUNT(*) as c FROM users').get() as any)?.c || 0;
+      if (userCount === 0) {
+        // Dynamic import to prevent circular dependency
+        const { seedSync } = require('./seed');
+        seedSync(dbInstance, false);
+      }
+    } catch (seedErr) {
+      console.warn('Initial catalog seed notice:', seedErr);
+    }
   }
   return dbInstance;
 }

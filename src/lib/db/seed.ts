@@ -1,30 +1,28 @@
 import bcrypt from 'bcryptjs';
 import { getDb, initSchema } from './index';
 
-export async function runSeed() {
-  const db = getDb();
+export function seedSync(db: any, clearExisting: boolean = false) {
   initSchema(db);
 
-  console.log('Seeding Homiq database with realistic India-focused accommodation data...');
+  if (clearExisting) {
+    db.exec(`
+      DELETE FROM audit_logs;
+      DELETE FROM maintenance_requests;
+      DELETE FROM move_in_records;
+      DELETE FROM reports;
+      DELETE FROM reviews;
+      DELETE FROM saved_listings;
+      DELETE FROM viewings;
+      DELETE FROM enquiry_messages;
+      DELETE FROM enquiries;
+      DELETE FROM neighbourhood_facilities;
+      DELETE FROM rooms;
+      DELETE FROM listings;
+      DELETE FROM users;
+    `);
+  }
 
-  // Clear existing data safely
-  db.exec(`
-    DELETE FROM audit_logs;
-    DELETE FROM maintenance_requests;
-    DELETE FROM move_in_records;
-    DELETE FROM reports;
-    DELETE FROM reviews;
-    DELETE FROM saved_listings;
-    DELETE FROM viewings;
-    DELETE FROM enquiry_messages;
-    DELETE FROM enquiries;
-    DELETE FROM neighbourhood_facilities;
-    DELETE FROM rooms;
-    DELETE FROM listings;
-    DELETE FROM users;
-  `);
-
-  const passwordHash = await bcrypt.hash('Password123!', 10);
+  const passwordHash = bcrypt.hashSync('Password123!', 10);
   const now = new Date().toISOString();
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
@@ -732,10 +730,16 @@ export async function runSeed() {
   console.log('Database seeded successfully with 5 test user roles and rich listings!');
 }
 
+export async function runSeed() {
+  seedSync(getDb(), true);
+}
+
 // Allow CLI execution
 if (require.main === module) {
-  runSeed().catch((err) => {
+  try {
+    runSeed();
+  } catch (err) {
     console.error('Seed failed:', err);
     process.exit(1);
-  });
+  }
 }

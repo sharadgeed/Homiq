@@ -14,15 +14,28 @@ import { formatINR } from '@/lib/api-response';
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'reports' | 'verifications' | 'audit' | 'users'>('reports');
   const [data, setData] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchAdminData = () => {
     setLoading(true);
-    fetch('/api/admin/moderation')
+    setAuthError(null);
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(uData => {
+        if (uData?.user?.role !== 'admin') {
+          setAuthError('Administrator privileges required to view this moderation console.');
+          return null;
+        }
+        setCurrentUser(uData.user);
+        return fetch('/api/admin/moderation');
+      })
       .then(res => {
+        if (!res) return null;
         if (res.status === 403 || res.status === 401) {
-          alert('Admin access required. Please switch to Admin demo role in top bar.');
+          setAuthError('Unauthorized: Administrator privileges required.');
           return null;
         }
         return res.json();
@@ -30,7 +43,10 @@ export default function AdminDashboard() {
       .then(resData => {
         if (resData) setData(resData);
       })
-      .catch(err => console.error(err))
+      .catch(err => {
+        console.error(err);
+        setAuthError('Failed to load moderation data.');
+      })
       .finally(() => setLoading(false));
   };
 
@@ -128,7 +144,9 @@ export default function AdminDashboard() {
               <span className="badge" style={{ background: '#fee2e2', color: '#b91c1c', fontWeight: 700 }}>
                 Platform Compliance & Trust Lead
               </span>
-              <span className="badge badge-verified">Neha Iyer (Staff ID: HMQ-MOD-01)</span>
+              <span className="badge badge-verified">
+                {currentUser ? `${currentUser.name} (${currentUser.email})` : 'Authorized Staff'}
+              </span>
             </div>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)' }}>
               Trust, Safety & Moderation Console
@@ -138,6 +156,15 @@ export default function AdminDashboard() {
             </p>
           </div>
         </div>
+
+        {authError && (
+          <div className="card" style={{ padding: '2rem', textAlign: 'center', borderColor: '#f87171', background: '#fef2f2', marginBottom: '2rem' }}>
+            <ShieldAlert size={36} color="#b91c1c" style={{ margin: '0 auto 0.75rem' }} />
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#991b1b', marginBottom: '0.5rem' }}>Access Denied</h2>
+            <p style={{ color: '#7f1d1d', fontSize: '0.9rem', marginBottom: '1.25rem' }}>{authError}</p>
+            <Link href="/" className="btn btn-primary btn-sm">Return to Marketplace</Link>
+          </div>
+        )}
 
         {/* Operational Metrics Overview */}
         {data?.stats && (

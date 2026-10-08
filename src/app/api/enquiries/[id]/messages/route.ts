@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, logAuditEvent } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -50,6 +50,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       },
     }, 201);
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to send message', 500);
+    return handleApiError(err);
   }
 }

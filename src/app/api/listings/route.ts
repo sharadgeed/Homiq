@@ -2,11 +2,19 @@ import { NextRequest } from 'next/server';
 import { searchListings } from '@/lib/db/queries';
 import { requireAuth, logAuditEvent } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+
+    let filterOwnerId: string | undefined = undefined;
+    if (searchParams.get('mine') === 'true') {
+      const user = await requireAuth();
+      filterOwnerId = user.id;
+    } else if (searchParams.get('ownerId')) {
+      filterOwnerId = searchParams.get('ownerId')!;
+    }
 
     const city = searchParams.get('city') || undefined;
     const neighbourhood = searchParams.get('neighbourhood') || undefined;
@@ -22,6 +30,7 @@ export async function GET(req: NextRequest) {
     const verifiedOnly = searchParams.get('verifiedOnly') === 'true';
     const search = searchParams.get('search') || undefined;
     const sortBy = (searchParams.get('sortBy') as any) || undefined;
+    const status = searchParams.get('status') || undefined;
     const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
     const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : 20;
 
@@ -42,12 +51,13 @@ export async function GET(req: NextRequest) {
       sortBy,
       page,
       limit,
+      ownerId: filterOwnerId,
+      status,
     });
 
     return jsonResponse(result);
   } catch (err: any) {
-    console.error('Search listings error:', err);
-    return errorResponse(err.message || 'Failed to search listings', 500);
+    return handleApiError(err);
   }
 }
 

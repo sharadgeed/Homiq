@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, logAuditEvent } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     return jsonResponse({ reviews });
   } catch (err: any) {
-    return errorResponse(err.message || 'Error fetching reviews', 500);
+    return handleApiError(err);
   }
 }
 
@@ -49,6 +49,29 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getDb();
+
+    // Eligibility verification: Must have interacted with listing (viewing, enquiry, or move-in)
+    const confirmedStay = db.prepare(`
+      SELECT 1 FROM viewings WHERE listingId = ? AND renterId = ? AND status IN ('confirmed', 'completed')
+      UNION
+      SELECT 1 FROM move_in_records WHERE listingId = ? AND renterId = ?
+    `).get(listingId, user.id, listingId, user.id);
+
+    const hasEnquiry = db.prepare(`
+      SELECT 1 FROM enquiries WHERE listingId = ? AND renterId = ?
+    `).get(listingId, user.id);
+
+    if (!confirmedStay && !hasEnquiry && user.role !== 'admin') {
+      return errorResponse(
+        'Review eligibility requirement: You must have an active enquiry, scheduled viewing, or move-in record for this accommodation to submit a review.',
+        403
+      );
+    }
+
+    const isVerifiedStay = Boolean(confirmedStay);
+    // If not a verified stay, place review in moderation queue ('flagged')
+    const reviewStatus = isVerifiedStay || user.role === 'admin' ? 'published' : 'flagged';
+
     const id = 'rev_' + Math.random().toString(36).substring(2, 11);
     const now = new Date().toISOString();
 
@@ -56,7 +79,7 @@ export async function POST(req: NextRequest) {
       INSERT INTO reviews (
         id, listingId, renterId, overallRating, cleanlinessRating, locationRating, valueRating, landlordRating,
         title, comment, pros, cons, verifiedStay, status, createdAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'published', ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       listingId,
@@ -70,13 +93,32 @@ export async function POST(req: NextRequest) {
       comment.trim(),
       pros ? pros.trim() : null,
       cons ? cons.trim() : null,
+      isVerifiedStay ? 1 : 0,
+      reviewStatus,
       now
     );
 
-    logAuditEvent(user.id, 'SUBMIT_REVIEW', 'review', id, { listingId, rating: overallRating });
+    logAuditEvent(user.id, 'SUBMIT_REVIEW', 'review', id, {
+      listingId,
+      rating: overallRating,
+      verifiedStay: isVerifiedStay,
+      status: reviewStatus,
+    });
 
-    return jsonResponse({ success: true, id }, 201);
+    return jsonResponse(
+      {
+        success: true,
+        id,
+        status: reviewStatus,
+        verifiedStay: isVerifiedStay,
+        message:
+          reviewStatus === 'published'
+            ? 'Review published successfully'
+            : 'Review submitted for moderation review',
+      },
+      201
+    );
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to submit review', 500);
+    return handleApiError(err);
   }
 }

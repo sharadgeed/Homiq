@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { requireAuth, logAuditEvent } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { getListingById } from '@/lib/db/queries';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +34,7 @@ export async function GET() {
     const requests = db.prepare(query).all(...params);
     return jsonResponse({ requests });
   } catch (err: any) {
-    return errorResponse(err.message || 'Unauthorized', 401);
+    return handleApiError(err);
   }
 }
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     return jsonResponse({ success: true, id }, 201);
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to submit maintenance request', 500);
+    return handleApiError(err);
   }
 }
 
@@ -99,6 +99,6 @@ export async function PATCH(req: NextRequest) {
 
     return jsonResponse({ success: true });
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to update maintenance request', 500);
+    return handleApiError(err);
   }
 }

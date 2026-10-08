@@ -24,7 +24,7 @@ export default function Footer() {
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.75rem', color: '#34d399', alignItems: 'center' }}>
               <CheckCircle2 size={16} />
-              <span>RERA Registered & Title Verified Listings</span>
+              <span>RERA Disclosures & Stamped Availability Status</span>
             </div>
           </div>
 
@@ -88,7 +88,7 @@ export default function Footer() {
           gap: '1rem',
           fontSize: '0.8125rem'
         }}>
-          <div>© {new Date().getFullYear()} Homiq India Technologies Private Limited. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} Homiq India. All rights reserved. • Electronic marketplace intermediary under IT Act 2000 §79.</div>
           <div style={{ display: 'flex', gap: '1.5rem', color: '#94a3b8' }}>
             <span>INR (₹) Standard</span>
             <span>English / Pan-India Multi-Lingual Ready</span>

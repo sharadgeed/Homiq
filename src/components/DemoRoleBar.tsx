@@ -9,12 +9,22 @@ export default function DemoRoleBar() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loadingRole, setLoadingRole] = useState<string | null>(null);
 
+  // Strictly disabled in production builds unless explicitly enabled for isolated staging testing
+  const isDevEnabled =
+    process.env.NEXT_PUBLIC_ENABLE_DEV_SWITCHER === 'true' ||
+    process.env.NODE_ENV !== 'production';
+
   useEffect(() => {
+    if (!isDevEnabled) return;
     fetch('/api/auth/me')
       .then(res => res.json())
       .then(data => setCurrentUser(data.user))
       .catch(() => {});
   }, []);
+
+  if (!isDevEnabled) {
+    return null;
+  }
 
   const switchRole = async (role: string) => {
     try {

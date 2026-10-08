@@ -18,18 +18,21 @@ export default function OwnerDashboard() {
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [viewings, setViewings] = useState<Viewing[]>([]);
   const [maintenance, setMaintenance] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [reconfirmingId, setReconfirmingId] = useState<string | null>(null);
 
   const fetchData = () => {
     setLoading(true);
     Promise.all([
-      fetch('/api/listings?limit=50').then(r => r.json()),
+      fetch('/api/auth/me').then(r => r.json()),
+      fetch('/api/listings?mine=true').then(r => r.json()),
       fetch('/api/enquiries').then(r => r.json()),
       fetch('/api/viewings').then(r => r.json()),
       fetch('/api/maintenance').then(r => r.json()),
     ])
-      .then(([lData, eData, vData, mData]) => {
+      .then(([uData, lData, eData, vData, mData]) => {
+        if (uData?.user) setCurrentUser(uData.user);
         setListings(lData.listings || []);
         setEnquiries(eData.enquiries || []);
         setViewings(vData.viewings || []);
@@ -121,13 +124,17 @@ export default function OwnerDashboard() {
               <span className="badge" style={{ background: '#e0e7ff', color: '#4338ca', fontWeight: 700 }}>
                 Landlord / Owner Portal
               </span>
-              <span className="badge badge-verified">Owner Verified (Electricity Bill / Property Tax)</span>
+              <span className="badge badge-verified">
+                {currentUser?.verificationStatus === 'verified'
+                  ? 'Owner Verified (Documents Reviewed)'
+                  : 'Verification In Progress'}
+              </span>
             </div>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)' }}>
               Property Owner Console
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-              Manage rental listings, reconfirm availability dates, screen applicants, and schedule viewings.
+              {currentUser ? `${currentUser.name} • ` : ''}Manage rental listings, reconfirm availability dates, screen applicants, and schedule viewings.
             </p>
           </div>
 

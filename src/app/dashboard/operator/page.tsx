@@ -13,6 +13,8 @@ import { formatINR } from '@/lib/api-response';
 
 export default function OperatorDashboard() {
   const [operatorListing, setOperatorListing] = useState<any>(null);
+  const [allOperatorListings, setAllOperatorListings] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,10 +24,25 @@ export default function OperatorDashboard() {
 
   const fetchOperatorData = () => {
     setLoading(true);
-    fetch('/api/listings/lst_hsr_coliving_pg')
+    fetch('/api/auth/me')
       .then(res => res.json())
+      .then(uData => {
+        if (uData?.user) setCurrentUser(uData.user);
+        return fetch('/api/listings?mine=true');
+      })
+      .then(res => res.json())
+      .then(lData => {
+        const myProps = lData.listings || [];
+        setAllOperatorListings(myProps);
+        if (myProps.length > 0) {
+          const target = myProps.find((l: any) => l.propertyType === 'pg' || l.propertyType === 'hostel') || myProps[0];
+          return fetch(`/api/listings/${target.id}`);
+        }
+        return null;
+      })
+      .then(res => (res ? res.json() : null))
       .then(data => {
-        if (data.listing) {
+        if (data?.listing) {
           setOperatorListing(data.listing);
           setRooms(data.listing.rooms || []);
         }
@@ -56,13 +73,17 @@ export default function OperatorDashboard() {
               <span className="badge" style={{ background: '#fef3c7', color: '#b45309', fontWeight: 700 }}>
                 Co-Living & PG Operator Console
               </span>
-              <span className="badge badge-verified">FSSAI & Trade License Verified</span>
+              <span className="badge badge-verified">
+                {currentUser?.verificationStatus === 'verified'
+                  ? 'Operator Verified (Business Registration)'
+                  : 'Verification In Review'}
+              </span>
             </div>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)' }}>
               Room & Bed Inventory Manager
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-              Priya Nambiar • Operating "Serene Heights Co-Living & PG", HSR Layout Sector 2.
+              {currentUser?.name || 'Operator'} • {operatorListing ? `Operating "${operatorListing.title}", ${operatorListing.neighbourhood}` : 'Managing co-living accommodations & meal plans.'}
             </p>
           </div>
 

@@ -48,6 +48,15 @@ export default function TermsPage() {
               Listings that mandate discriminatory, harassing, or unlawful exclusions based on religion, caste, gender, or orientation are strictly prohibited on Homiq and subject to immediate removal and audit action.
             </p>
           </div>
+
+          <div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+              4. Verification Disclaimer & Limitation of Liability
+            </h3>
+            <p>
+              Homiq provides an electronic marketplace for transparent rental accommodation discovery. While Homiq conducts document reviews and enforces community rules, Homiq does not guarantee title ownership, physical safety, deposit recovery, or contractual performance between landlords and renters. Users must perform independent due diligence and execute registered rental agreements in compliance with applicable State laws before making financial commitments.
+            </p>
+          </div>
         </div>
       </main>
 

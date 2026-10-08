@@ -36,16 +36,25 @@ export default function PrivacyPage() {
               2. Sensitive Identity Document Protection
             </h3>
             <p>
-              Homiq does not store raw Aadhaar numbers or biometric information. Government identity verification is performed via secure DigiLocker API gateways and masked document previews. Verification files are encrypted at rest with AES-256 and purged following compliance review.
+              Homiq does not collect raw, unmasked Aadhaar numbers or biometric information. Users submitting verification proofs are instructed to provide masked documents where personal identifier digits are redacted. Files uploaded for verification are accessible strictly to authorized compliance staff. Full automated DigiLocker and document verification integrations remain subject to regulatory licensing and partner onboarding.
             </p>
           </div>
 
           <div>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
-              3. Data Retention & Account Deletion
+              3. Data Rights, Export & Account Erasure (DPDP Act 2023)
             </h3>
             <p>
-              Users may request immediate account deletion and data export at any time. Rental transaction records and audit logs are retained strictly for the statutory duration required under Indian taxation and real estate record-keeping laws.
+              Under India's Digital Personal Data Protection Act (DPDP Act 2023), registered users have the right to review, export, and request erasure of their personal data. Self-service data export is accessible via <code>/api/user/export</code> and account deletion via <code>/api/user/delete</code>. Upon an erasure request, personal identifiable records are redacted or anonymized, while statutory audit logs and transaction dispute histories are retained for applicable legal periods.
+            </p>
+          </div>
+
+          <div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.35rem' }}>
+              4. Privacy Desk & Grievance Redressal
+            </h3>
+            <p>
+              For privacy inquiries, data rectification, or regulatory grievances, contact Homiq's Data Protection Desk at <a href="mailto:privacy@homiq.in" style={{ color: 'var(--primary)', fontWeight: 600 }}>privacy@homiq.in</a>. All privacy requests are acknowledged within statutory Indian timelines.
             </p>
           </div>
         </div>

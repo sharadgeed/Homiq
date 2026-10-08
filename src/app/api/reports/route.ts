@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { requireAuth, logAuditEvent } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,6 +30,6 @@ export async function POST(req: NextRequest) {
 
     return jsonResponse({ success: true, message: 'Report submitted for moderation triage', id }, 201);
   } catch (err: any) {
-    return errorResponse(err.message || 'Failed to submit report', 500);
+    return handleApiError(err);
   }
 }

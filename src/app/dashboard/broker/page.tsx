@@ -13,12 +13,26 @@ import { formatINR } from '@/lib/api-response';
 
 export default function BrokerDashboard() {
   const [brokerListing, setBrokerListing] = useState<any>(null);
+  const [allBrokerListings, setAllBrokerListings] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/listings/lst_indiranagar_2bhk')
+    setLoading(true);
+    fetch('/api/auth/me')
       .then(res => res.json())
-      .then(data => setBrokerListing(data.listing))
+      .then(uData => {
+        if (uData?.user) setCurrentUser(uData.user);
+        return fetch('/api/listings?mine=true');
+      })
+      .then(res => res.json())
+      .then(lData => {
+        const myProps = lData.listings || [];
+        setAllBrokerListings(myProps);
+        if (myProps.length > 0) {
+          setBrokerListing(myProps[0]);
+        }
+      })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, []);
@@ -36,13 +50,17 @@ export default function BrokerDashboard() {
               <span className="badge" style={{ background: '#fce7f3', color: '#be185d', fontWeight: 700 }}>
                 RERA Professional Broker Desk
               </span>
-              <span className="badge badge-verified">Karnataka RERA Reg: PRM/KA/RERA/1251</span>
+              <span className="badge badge-verified">
+                {currentUser?.brokerageRegistrationNo
+                  ? `RERA Reg: ${currentUser.brokerageRegistrationNo}`
+                  : 'RERA Registration Pending Disclosure'}
+              </span>
             </div>
             <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-main)' }}>
               Broker Representation & Leads Desk
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-              Vikram Kulkarni • Owner-Authorized Residential Representative in Indiranagar & Whitefield.
+              {currentUser ? `${currentUser.name} • ` : ''}Owner-Authorized Representative Console.
             </p>
           </div>
 

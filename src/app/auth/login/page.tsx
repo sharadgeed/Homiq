@@ -134,50 +134,52 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* 1-Click Demo Accounts Selector */}
-        <div className="card" style={{ padding: '1.5rem', background: '#f8fafc', border: '1.5px dashed #cbd5e1' }}>
-          <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            1-Click Demo Test Accounts
-          </h3>
-          <p style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center', marginBottom: '1rem' }}>
-            Preloaded with realistic Indian accommodation seed data:
-          </p>
+        {/* 1-Click Demo Accounts Selector (Hidden in strict production builds) */}
+        {(process.env.NEXT_PUBLIC_ALLOW_DEMO_LOGIN === 'true' || process.env.NODE_ENV !== 'production') && (
+          <div className="card" style={{ padding: '1.5rem', background: '#f8fafc', border: '1.5px dashed #cbd5e1' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Preview Role Accounts (Staging / Dev)
+            </h3>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center', marginBottom: '1rem' }}>
+              Preloaded with realistic Indian accommodation sample data:
+            </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {[
-              { role: 'renter', label: 'Renter (Aarav Sharma)', desc: 'Search, bookings & checklists' },
-              { role: 'owner', label: 'Landlord (Rajesh Venkatesh)', desc: '1-click availability & leads' },
-              { role: 'operator', label: 'PG Operator (Priya Nambiar)', desc: 'Bed-level capacity & food plans' },
-              { role: 'broker', label: 'RERA Broker (Vikram Kulkarni)', desc: 'Disclosed brokerage & mandates' },
-              { role: 'admin', label: 'Admin (Neha Iyer)', desc: 'Moderation, title audit & disputes' },
-            ].map(d => (
-              <button
-                key={d.role}
-                type="button"
-                onClick={() => handleDemoLogin(d.role)}
-                disabled={loading}
-                style={{
-                  background: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  padding: '0.65rem 0.85rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  transition: 'border-color 150ms ease',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-main)' }}>{d.label}</div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{d.desc}</div>
-                </div>
-                <ArrowRight size={14} color="var(--primary)" />
-              </button>
-            ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {[
+                { role: 'renter', label: 'Renter (Aarav Sharma)', desc: 'Search, bookings & checklists' },
+                { role: 'owner', label: 'Landlord (Rajesh Venkatesh)', desc: '1-click availability & leads' },
+                { role: 'operator', label: 'PG Operator (Priya Nambiar)', desc: 'Bed-level capacity & food plans' },
+                { role: 'broker', label: 'RERA Broker (Vikram Kulkarni)', desc: 'Disclosed brokerage & mandates' },
+                { role: 'admin', label: 'Admin (Neha Iyer)', desc: 'Moderation, title audit & disputes' },
+              ].map(d => (
+                <button
+                  key={d.role}
+                  type="button"
+                  onClick={() => handleDemoLogin(d.role)}
+                  disabled={loading}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '0.65rem 0.85rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'border-color 150ms ease',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-main)' }}>{d.label}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{d.desc}</div>
+                  </div>
+                  <ArrowRight size={14} color="var(--primary)" />
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </main>
 
       <Footer />

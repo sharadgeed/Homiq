@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { requireRole, logAuditEvent } from '@/lib/auth';
 import { getDb } from '@/lib/db';
-import { jsonResponse, errorResponse } from '@/lib/api-response';
+import { jsonResponse, errorResponse, handleApiError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,7 +69,7 @@ export async function GET() {
       auditLogs,
     });
   } catch (err: any) {
-    return errorResponse(err.message || 'Unauthorized admin access', err.status || 403);
+    return handleApiError(err);
   }
 }
 
@@ -127,6 +127,6 @@ export async function POST(req: NextRequest) {
 
     return errorResponse('Invalid action specified', 400);
   } catch (err: any) {
-    return errorResponse(err.message || 'Action failed', err.status || 403);
+    return handleApiError(err);
   }
 }

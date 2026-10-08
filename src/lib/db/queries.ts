@@ -36,6 +36,8 @@ export interface ListingFilterParams {
   sortBy?: 'rent_asc' | 'rent_desc' | 'availability_new' | 'rating' | 'cost_asc';
   page?: number;
   limit?: number;
+  ownerId?: string;
+  status?: string;
 }
 
 export function searchListings(params: ListingFilterParams) {
@@ -46,9 +48,21 @@ export function searchListings(params: ListingFilterParams) {
            (SELECT COUNT(*) FROM reviews r WHERE r.listingId = l.id AND r.status = 'published') as reviewCount
     FROM listings l
     JOIN users u ON l.ownerId = u.id
-    WHERE l.status = 'active'
+    WHERE 1=1
   `;
   const queryParams: any[] = [];
+
+  if (params.ownerId) {
+    query += ` AND l.ownerId = ?`;
+    queryParams.push(params.ownerId);
+  }
+
+  if (params.status) {
+    query += ` AND l.status = ?`;
+    queryParams.push(params.status);
+  } else if (!params.ownerId) {
+    query += ` AND l.status = 'active'`;
+  }
 
   if (params.city && params.city !== 'all') {
     query += ` AND LOWER(l.city) LIKE LOWER(?)`;
@@ -148,7 +162,7 @@ export function searchListings(params: ListingFilterParams) {
   };
 }
 
-export function getListingById(id: string): Listing | null {
+export function getListingById(id: string, viewerUserId?: string, viewerRole?: string): Listing | null {
   const db = getDb();
   const row = db.prepare(`
     SELECT l.*, u.name as ownerName, u.role as ownerRole, u.verificationStatus as ownerVerification,
@@ -168,6 +182,31 @@ export function getListingById(id: string): Listing | null {
   } catch {}
 
   const listing = parseListingRow(row);
+
+  // Check viewer access level to protect private address and direct contact information
+  let hasPrivilegedAccess = false;
+  if (viewerRole === 'admin') {
+    hasPrivilegedAccess = true;
+  } else if (viewerUserId && viewerUserId === listing.ownerId) {
+    hasPrivilegedAccess = true;
+  } else if (viewerUserId) {
+    // Check if renter has an accepted/confirmed viewing
+    const viewing = db.prepare(`
+      SELECT 1 FROM viewings
+      WHERE listingId = ? AND renterId = ? AND status IN ('confirmed', 'completed')
+      LIMIT 1
+    `).get(listing.id, viewerUserId);
+    if (viewing) {
+      hasPrivilegedAccess = true;
+    }
+  }
+
+  // If not privileged, protect host contact information and mask exact flat/unit address
+  if (!hasPrivilegedAccess) {
+    listing.address = listing.publicLocationDescription || `${listing.neighbourhood}, ${listing.city}`;
+    listing.ownerPhone = undefined as any;
+    listing.ownerEmail = undefined as any;
+  }
 
   // Load rooms
   const rooms = db.prepare('SELECT * FROM rooms WHERE listingId = ? ORDER BY rentPerBed ASC').all(row.id) as any[];

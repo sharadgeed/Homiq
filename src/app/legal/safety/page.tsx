@@ -39,20 +39,20 @@ export default function SafetyPage() {
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', fontSize: '0.85rem', color: '#475569' }}>
               <div>
-                <strong>Aadhaar / DigiLocker Verification:</strong><br />
-                Identity verification prevents anonymous abusive actors.
+                <strong>Identity & Account Review:</strong><br />
+                Users may voluntarily submit masked government identification documents for trust screening. Automated DigiLocker and biometric API integrations remain subject to regulatory licensing and accredited provider onboarding.
               </div>
               <div>
                 <strong>Property Tax & Utility Verification:</strong><br />
-                Owners upload current electricity bills or municipal property tax receipts.
+                Owners may upload current electricity bills or municipal property tax receipts to support listing authenticity.
               </div>
               <div>
                 <strong>RERA Broker Accreditation:</strong><br />
-                Real estate brokers must disclose state RERA credentials.
+                Brokers and agents are required to disclose their state RERA registration numbers and representation status.
               </div>
               <div>
-                <strong>24-Hour Moderation Triage:</strong><br />
-                Every user report is audited by our human compliance staff.
+                <strong>Compliance Moderation Triage:</strong><br />
+                User abuse reports, misleading pricing flags, and duplicate listings are triaged and audited by platform compliance staff.
               </div>
             </div>
           </div>

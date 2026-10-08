@@ -14,6 +14,8 @@ import CommuteEstimator from '@/components/CommuteEstimator';
 import InteractiveMap from '@/components/InteractiveMap';
 import ListingDetailActions from './ListingDetailActions';
 import { getListingById } from '@/lib/db/queries';
+import { getDb } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth';
 import { formatINR } from '@/lib/api-response';
 
 interface PageProps {
@@ -22,11 +24,21 @@ interface PageProps {
 
 export default async function ListingDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const listing = getListingById(id);
+  const viewer = await getCurrentUser();
+  const listing = getListingById(id, viewer?.id, viewer?.role);
 
   if (!listing) {
     notFound();
   }
+
+  const db = getDb();
+  const reviews = db.prepare(`
+    SELECT r.*, u.name as renterName, u.avatarUrl as renterAvatar
+    FROM reviews r
+    JOIN users u ON r.renterId = u.id
+    WHERE r.listingId = ? AND r.status = 'published'
+    ORDER BY r.createdAt DESC
+  `).all(listing.id) as any[];
 
   const getFreshnessDescription = () => {
     if (!listing.availabilityConfirmedAt) return 'Pending confirmation';
@@ -292,30 +304,53 @@ export default async function ListingDetailPage({ params }: PageProps) {
             <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                 <div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Verified Renter Reviews</h3>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Renter Reviews & Feedback</h3>
                   <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                    Overall Rating: {listing.avgRating ? listing.avgRating.toFixed(1) : '4.8'} / 5.0 ({listing.reviewCount || 2} verified stays)
+                    {reviews.length > 0
+                      ? `Average Rating: ${(reviews.reduce((acc, r) => acc + r.overallRating, 0) / reviews.length).toFixed(1)} / 5.0 (${reviews.length} published reviews)`
+                      : 'No public reviews yet for this home'}
                   </p>
                 </div>
               </div>
 
-              {/* Sample Review Card */}
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1rem', marginBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>Aarav Sharma • Verified Stay</div>
-                  <span style={{ color: '#d97706', fontWeight: 700, fontSize: '0.85rem' }}>★ 4.8 / 5.0</span>
+              {/* Dynamic Reviews or Honest Empty State */}
+              {reviews.length === 0 ? (
+                <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '10px', padding: '1.5rem', textAlign: 'center' }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                    No reviews have been submitted for this accommodation yet.
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Reviews can only be submitted by verified tenants and visitors following a scheduled viewing or move-in.
+                  </p>
                 </div>
-                <h4 style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem', color: 'var(--text-main)' }}>
-                  Extremely transparent landlord and peaceful locality
-                </h4>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '0.5rem' }}>
-                  Stayed here for 11 months. Owner Rajesh uncle is very accommodating and returned the full security deposit within 48 hours of vacating with zero arbitrary deductions.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.75rem', marginTop: '0.5rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.5rem' }}>
-                  <div style={{ color: '#15803d' }}><strong>Pros:</strong> 24x7 Kaveri water, prompt plumbing repairs, quiet street</div>
-                  <div style={{ color: '#b45309' }}><strong>Cons:</strong> Street gets busy on Saturday evenings</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {reviews.map((rev: any) => (
+                    <div key={rev.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                          {rev.renterName} {rev.verifiedStay ? '• Verified Stay' : '• Verified Viewing'}
+                        </div>
+                        <span style={{ color: '#d97706', fontWeight: 700, fontSize: '0.85rem' }}>
+                          ★ {rev.overallRating.toFixed(1)} / 5.0
+                        </span>
+                      </div>
+                      <h4 style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem', color: 'var(--text-main)' }}>
+                        {rev.title}
+                      </h4>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '0.5rem' }}>
+                        {rev.comment}
+                      </p>
+                      {(rev.pros || rev.cons) && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.75rem', marginTop: '0.5rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.5rem' }}>
+                          {rev.pros && <div style={{ color: '#15803d' }}><strong>Pros:</strong> {rev.pros}</div>}
+                          {rev.cons && <div style={{ color: '#b45309' }}><strong>Cons:</strong> {rev.cons}</div>}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
